@@ -9,8 +9,6 @@ var http = require('http');
 var https = require('https');
 var url = require('url');
 
-process.argv[2] ? Util().toDataURI(process.argv[2]) : Util().toDataURI();
-
 function Util() {
 
     var defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Node.js_logo.svg/320px-Node.js_logo.svg.png';
@@ -18,13 +16,21 @@ function Util() {
     var file;
 
     return {
-        toDataURI: function(urlArg) {
+        toDataURI: function(urlArg, cb) {
             var imageURL;
             urlArg ? imageURL = urlArg : imageURL = defaultImage;
-            url.parse(imageURL).protocol === 'https:' ? Util().httpsGetImage(imageURL) : Util().httpGetImage(imageURL);
+            if(url.parse(imageURL).protocol === 'https:') {
+                Util().httpsGetImage(imageURL, function(err, data){
+                    err ? cb(err,null): cb(null, data);
+                }) ;
+            } else {
+                Util().httpGetImage(imageURL, function(err, data){
+                    err ? cb(err, null): cb(null, data);
+                });
+            } 
         },
 
-        httpGetImage: function(url) {
+        httpGetImage: function(url, cb) {
             file = fs.createWriteStream(imageDest);
 
             http.get(url, function(response) {
@@ -36,13 +42,13 @@ function Util() {
                 file.on('finish', function() {
                     file.close();
                     Util().imageToDataUri(imageDest, function(err, data) {
-                        err ? console.log(err) : console.log(data);
+                        err ? cb(err, null) : cb(null,data);
                     });
                 });
             })
         },
 
-        httpsGetImage: function(url) {
+        httpsGetImage: function(url, cb) {
             file = fs.createWriteStream(imageDest);
 
             https.get(url, function(response) {
@@ -54,7 +60,7 @@ function Util() {
                 file.on('finish', function() {
                     file.close();
                     Util().imageToDataUri(imageDest, function(err, data) {
-                        err ? console.log(err) : console.log(data);
+                        err ? cb(err, null) : cb(null,data);
                     });
                 });
             })
@@ -74,3 +80,5 @@ function Util() {
         }
     }
 }
+
+module.exports = Util();
