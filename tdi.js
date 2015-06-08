@@ -25,13 +25,13 @@ connection.query(create_database, function (err, res) {
     if (err) {
         console.log(err);
     } else {
-        console.log('Create database data_uri [ok]');
+        console.log('Database data_uri [ok]');
 
         connection.query(create_table, function (err, result) {
             if (err) {
                 console.error(err);
             } else {
-                console.log('Create table images [ok]');
+                console.log('Table images [ok]');
                 main(process);
             }
         })
@@ -40,7 +40,12 @@ connection.query(create_database, function (err, res) {
 
 function insertData(data, connection) {
     connection.query('INSERT INTO data_uri.images SET ?', { data: data }, function (err, res) {
-        (err) ? console.log(err) : console.log(res);
+        if(err) {
+           console.log(err) 
+        } else {
+           console.log(res);
+           closeConnection();
+        }
     })
 };
 
@@ -54,7 +59,9 @@ function showData(connection) {
                 
                 console.log('id \u2192', element.id);
                 console.log('image \u2192', element.data);
-            })
+            });
+
+            closeConnection();
         } 
     })
 }
@@ -67,6 +74,7 @@ function main(process) {
             Util.toDataURI(process.argv[2], function (err, data) {
                 if (!err) {
                     insertData(data, connection);
+                    
                 }
             })
         }
@@ -74,7 +82,17 @@ function main(process) {
         Util.toDataURI(null, function (err, data) {
             if (!err) {
                 console.log(data);
+                closeConnection();
             }
         });
     }
+}
+
+
+function closeConnection(){
+    connection.end(function(err){
+       if(err) {
+           console.log(err);
+        }
+    });
 }
